@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<title>ShadowClient Banner Generator</title>
+<style>
+  @font-face { font-family: "Silkscreen"; font-weight: 700; src: url("../../node_modules/@fontsource/silkscreen/files/silkscreen-latin-700-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Pixelify Sans"; font-weight: 600; src: url("../../node_modules/@fontsource/pixelify-sans/files/pixelify-sans-latin-600-normal.woff2") format("woff2"); }
+  html, body { margin: 0; background: #111; }
+  #banner { position: relative; width: 640px; height: 320px; overflow: hidden; }
+  #banner canvas { position: absolute; image-rendering: pixelated; }
+  .hud { position: absolute; font-family: "Pixelify Sans"; font-weight: 600; color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,.6); }
+  .box { background: rgba(0,0,0,.55); border-left: 3px solid var(--c); padding: 6px 10px; font-size: 18px; margin-bottom: 6px; }
+  .key { position: absolute; width: 38px; height: 38px; display: grid; place-items: center; background: rgba(0,0,0,.55); font-size: 18px; }
+  .key.on { background: var(--c); color: #000; text-shadow: none; }
+  .frame { position: absolute; border: 2px dashed var(--c); }
+  .cursor { position: absolute; width: 0; height: 0; border-left: 10px solid #fff; border-right: 10px solid transparent; border-bottom: 20px solid transparent; transform: rotate(-20deg); filter: drop-shadow(2px 2px 0 rgba(0,0,0,.6)); }
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<script src="../../node_modules/skinview3d/bundles/skinview3d.bundle.js"></script>
+<script>
+const W = 640, H = 320;
+const params = new URLSearchParams(location.search);
+const banner = document.getElementById("banner");
+
+/* ---------- Eigene, prozedurale Skins ---------- */
+function makeSkin({ hoodie, hoodie2, accent, hair, skin = "#c99a7a", pants = "#111827", eyes = accent }) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d");
+  const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  r(0, 0, 32, 16, skin);
+  r(8, 0, 8, 8, hair); r(16, 0, 8, 8, hair); r(0, 8, 32, 2, hair); r(8, 8, 8, 3, hair);
+  r(9, 11, 2, 1, "#fff"); r(13, 11, 2, 1, "#fff"); r(10, 11, 1, 1, eyes); r(14, 11, 1, 1, eyes);
+  r(11, 14, 2, 1, "#8a5a44");
+  r(32, 8, 32, 2, hoodie); r(40, 0, 8, 8, hoodie);
+  r(16, 16, 24, 16, hoodie); r(20, 20, 8, 12, hoodie2); r(23, 22, 2, 6, accent);
+  r(40, 16, 16, 16, hoodie); r(40, 29, 16, 3, skin); r(32, 48, 16, 16, hoodie); r(32, 61, 16, 3, skin);
+  r(44, 26, 4, 1, accent); r(36, 58, 4, 1, accent);
+  r(0, 16, 16, 16, pants); r(0, 29, 16, 3, "#020617"); r(16, 48, 16, 16, pants); r(16, 61, 16, 3, "#020617");
+  return c;
+}
+const SKINS = {
+  shadow: makeSkin({ hoodie: "#0f172a", hoodie2: "#1e293b", accent: "#22d3ee", hair: "#1f1a17" }),
+  ruby:   makeSkin({ hoodie: "#4c0519", hoodie2: "#881337", accent: "#fb7185", hair: "#7c2d12", skin: "#e0b48f" }),
+  lime:   makeSkin({ hoodie: "#14532d", hoodie2: "#166534", accent: "#a3e635", hair: "#facc15", skin: "#f1c27d" }),
+  violet: makeSkin({ hoodie: "#2e1065", hoodie2: "#4c1d95", accent: "#c084fc", hair: "#0f0f0f", skin: "#a8775a" }),
+  amber:  makeSkin({ hoodie: "#431407", hoodie2: "#7c2d12", accent: "#fbbf24", hair: "#e5e7eb", skin: "#d4a07a" }),
+};
+
+/* ---------- Pixel-Landschaft (2D) ---------- */
+function rand(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+function scene({ sky, stars = 0, clouds = 0, hills, ground = "grass", seed = 7 }) {
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d"); const R = rand(seed);
+  const grad = g.createLinearGradient(0, 0, 0, H); sky.forEach((col, i) => grad.addColorStop(i / (sky.length - 1), col));
+  g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < stars; i++) { g.fillStyle = `rgba(255,255,255,${0.3 + R() * 0.7})`; const s = R() < .15 ? 3 : 2; g.fillRect(Math.floor(R() * W), Math.floor(R() * H * 0.6), s, s); }
+  for (let i = 0; i < clouds; i++) {
+    const cx = Math.floor(R() * W), cy = 20 + Math.floor(R() * 90), cw = 60 + Math.floor(R() * 80);
+    g.fillStyle = "rgba(255,255,255,.85)"; g.fillRect(cx, cy, cw, 12); g.fillRect(cx + 12, cy - 8, cw - 30, 8);
+    g.fillStyle = "rgba(220,230,245,.9)"; g.fillRect(cx, cy + 10, cw, 4);
+  }
+  hills.forEach(([col, base, amp], li) => {
+    g.fillStyle = col;
+    for (let x = 0; x < W; x += 16) {
+      const h = base + Math.round((Math.sin((x + li * 90) / (70 + li * 25)) * amp + Math.sin(x / 23 + li) * amp * .3) / 8) * 8;
+      g.fillRect(x, H - h, 16, h);
+    }
+  });
+  // Blockboden
+  const B = 32, gy = H - 56;
+  const pal = ground === "grass" ? { top: ["#4ade80", "#22c55e", "#16a34a"], side: ["#8b5a2b", "#7a4a22", "#6b3f1d"] }
+            : ground === "sculk" ? { top: ["#0e7490", "#155e75", "#0f3a4a"], side: ["#1e293b", "#0f172a", "#172033"] }
+            : { top: ["#f5d0a9", "#e7b98a", "#d9a46e"], side: ["#c08552", "#a86f41", "#94603a"] };
+  for (let bx = 0; bx < W; bx += B) for (let by = gy; by < H; by += B) {
+    for (let px = 0; px < 8; px++) for (let py = 0; py < 8; py++) {
+      const topRow = by === gy && py < (2 + (px % 3 === 0 ? 1 : 0));
+      const arr = topRow ? pal.top : pal.side;
+      g.fillStyle = arr[Math.floor(R() * arr.length)];
+      g.fillRect(bx + px * 4, by + py * 4, 4, 4);
+    }
+  }
+  g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(0, gy, W, 3);
+  return c;
+}
+
+/* ---------- 3D-Figur ---------- */
+function figure({ skin, x, y, w, h, rot = 0.4, pose = "idle", tag, zoom = 0.85 }) {
+  const canvas = document.createElement("canvas");
+  const v = new skinview3d.SkinViewer({ canvas, width: w, height: h, skin: SKINS[skin], renderPaused: true });
+  v.renderer.setClearColor(0x000000, 0);
+  v.zoom = zoom; v.fov = 40;
+  v.playerObject.rotation.y = rot;
+  const s = v.playerObject.skin;
+  if (pose === "wave") { s.rightArm.rotation.z = 2.6; s.rightArm.rotation.x = -0.2; s.leftArm.rotation.z = -0.15; }
+  if (pose === "point") { s.rightArm.rotation.x = -1.45; s.rightArm.rotation.z = 0.15; }
+  if (pose === "walk") { s.rightArm.rotation.x = 0.6; s.leftArm.rotation.x = -0.6; s.rightLeg.rotation.x = -0.5; s.leftLeg.rotation.x = 0.5; }
+  if (pose === "cheer") { s.rightArm.rotation.z = 2.8; s.leftArm.rotation.z = -2.8; }
+  if (pose === "hold") { s.rightArm.rotation.x = -0.9; s.leftArm.rotation.x = -0.9; s.rightArm.rotation.z = 0.25; s.leftArm.rotation.z = -0.25; }
+  if (tag) v.nameTag = new skinview3d.NameTagObject(tag, { font: '600 42px "Pixelify Sans"', repaintAfterLoaded: false });
+  v.render();
+  canvas.style.left = x + "px"; canvas.style.top = y + "px";
+  banner.appendChild(canvas);
+  return canvas;
+}
+
+/* ---------- Titel ---------- */
+function title(text, { x = 28, y = 64, size = 46, color = "#fff", stroke = "#000", sub, subColor = "#22d3ee", align = "left" } = {}) {
+  const c = document.createElement("canvas"); c.width = W; c.height = H; c.style.left = c.style.top = "0";
+  const g = c.getContext("2d"); g.textAlign = align; g.textBaseline = "alphabetic";
+  g.font = `700 ${size}px Silkscreen`;
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    const ly = y + i * size * 0.95;
+    g.fillStyle = "rgba(0,0,0,.45)"; g.fillText(line, x + 5, ly + 6);
+    g.lineWidth = 8; g.strokeStyle = stroke; g.lineJoin = "round"; g.strokeText(line, x, ly);
+    const grad = g.createLinearGradient(0, ly - size, 0, ly);
+    grad.addColorStop(0, "#ffffff"); grad.addColorStop(1, color);
+    g.fillStyle = grad; g.fillText(line, x, ly);
+  });
+  if (sub) {
+    g.font = '600 18px "Pixelify Sans"';
+    const tw = g.measureText(sub).width;
+    const sy = y + (lines.length - 1) * size * 0.95 + 18;
+    const sx = align === "left" ? x : x - tw / 2 - 12;
+    g.fillStyle = "rgba(0,0,0,.6)"; g.fillRect(sx, sy, tw + 24, 30);
+    g.fillStyle = subColor; g.fillRect(sx, sy, 4, 30);
+    g.fillStyle = "#fff"; g.textAlign = "left"; g.fillText(sub, sx + 14, sy + 21);
+  }
+  banner.appendChild(c);
+}
+
+function addHtml(html, style) { const d = document.createElement("div"); d.className = "hud"; d.innerHTML = html; Object.assign(d.style, style); banner.appendChild(d); return d; }
+function vignette(color = "rgba(0,0,0,.35)") {
+  const c = document.createElement("canvas"); c.width = W; c.height = H; c.style.left = c.style.top = "0";
+  const g = c.getContext("2d"); const gr = g.createRadialGradient(W / 2, H / 2, H * .3, W / 2, H / 2, W * .7);
+  gr.addColorStop(0, "transparent"); gr.addColorStop(1, color); g.fillStyle = gr; g.fillRect(0, 0, W, H); banner.appendChild(c);
+}
+function bg(c) { c.style.left = c.style.top = "0"; banner.appendChild(c); }
+
+/* ---------- Banner ---------- */
+const BANNERS = {
+  friends() {
+    bg(scene({ sky: ["#0b1026", "#1e3a8a", "#3b82f6"], stars: 90, hills: [["#1e293b", 120, 26], ["#0f172a", 90, 18]], seed: 3 }));
+    figure({ skin: "shadow", x: 300, y: 40, w: 180, h: 260, rot: 0.55, pose: "wave", tag: "Maxushky" });
+    figure({ skin: "ruby", x: 440, y: 52, w: 170, h: 248, rot: -0.55, pose: "wave", tag: "Alex" });
+    addHtml(`<div class="box" style="--c:#22c55e"><span style="color:#22c55e">●</span> Alex ist jetzt online</div>`, { left: "28px", top: "196px", fontSize: "16px" });
+    vignette();
+    title("FREUNDE", { sub: "Online-Status & Server", subColor: "#38bdf8" });
+  },
+  modules() {
+    bg(scene({ sky: ["#052e16", "#15803d", "#86efac"], clouds: 5, hills: [["#166534", 110, 22], ["#14532d", 82, 16]], seed: 11 }));
+    figure({ skin: "lime", x: 450, y: 40, w: 190, h: 270, rot: -0.35, pose: "walk" });
+    addHtml(`<div class="box" style="--c:#a3e635">129 FPS</div><div class="box" style="--c:#a3e635">11 ms</div><div class="box" style="--c:#a3e635">XYZ -4 / 150 / -1</div>`, { left: "286px", top: "150px" });
+    const keys = [["W", 44, 0, true], ["A", 0, 44, false], ["S", 44, 44, true], ["D", 88, 44, false]];
+    keys.forEach(([k, kx, ky, on]) => addHtml(`<div class="key ${on ? "on" : ""}" style="--c:#a3e635">${k}</div>`, { left: 40 + kx + "px", top: 196 + ky + "px" }));
+    vignette();
+    title("32\nMODULE", { y: 70, sub: "HUD · Optik · Komfort", subColor: "#a3e635" });
+  },
+  hud() {
+    bg(scene({ sky: ["#431407", "#c2410c", "#fdba74"], clouds: 3, hills: [["#7c2d12", 104, 20], ["#431407", 78, 14]], ground: "sand", seed: 21 }));
+    figure({ skin: "amber", x: 400, y: 46, w: 190, h: 262, rot: -0.5, pose: "point" });
+    addHtml(`<div class="box" style="--c:#fbbf24;margin:0">Target-HUD ❤ 9.5</div>`, { left: "250px", top: "118px" });
+    addHtml(``, { left: "244px", top: "112px", width: "176px", height: "42px" }).className = "frame";
+    banner.lastChild.style.setProperty("--c", "#fbbf24");
+    addHtml(`<div class="cursor"></div>`, { left: "396px", top: "146px" });
+    addHtml(`<div class="box" style="--c:#fbbf24">7 Combo</div><div class="box" style="--c:#fbbf24">3.02 Blöcke</div>`, { left: "28px", top: "196px" });
+    vignette();
+    title("HUD-EDITOR", { size: 40, sub: "Drag & Drop · Skalieren", subColor: "#fbbf24" });
+  },
+  badge() {
+    bg(scene({ sky: ["#1e0b36", "#5b21b6", "#c084fc"], stars: 60, hills: [["#3b0764", 110, 24], ["#2e1065", 84, 16]], ground: "sculk", seed: 31 }));
+    figure({ skin: "violet", x: 210, y: 44, w: 170, h: 256, rot: 0.45, pose: "cheer", tag: "✦ Luna" });
+    figure({ skin: "shadow", x: 380, y: 44, w: 170, h: 256, rot: -0.4, pose: "idle", tag: "✦ Maxushky" });
+    vignette("rgba(20,0,40,.45)");
+    title("✦", { x: 28, y: 92, size: 64, color: "#22d3ee" });
+    title("ABZEICHEN", { x: 28, y: 150, size: 34, sub: "Erkenne andere Nutzer", subColor: "#c084fc" });
+  },
+  version() {
+    bg(scene({ sky: ["#0c4a6e", "#0ea5e9", "#bae6fd"], clouds: 6, hills: [["#15803d", 100, 22], ["#166534", 76, 14]], seed: 41 }));
+    figure({ skin: "shadow", x: 400, y: 36, w: 200, h: 276, rot: -0.35, pose: "cheer" });
+    figure({ skin: "lime", x: 300, y: 70, w: 150, h: 240, rot: 0.5, pose: "wave" });
+    vignette("rgba(0,20,40,.3)");
+    title("MINECRAFT", { x: 28, y: 70, size: 30, color: "#e0f2fe" });
+    title("1.21.11", { x: 28, y: 132, size: 58, color: "#fde047", sub: "Jetzt unterstützt", subColor: "#fde047" });
+  },
+};
+
+document.fonts.load('700 40px Silkscreen').then(() => document.fonts.load('600 20px "Pixelify Sans"')).then(() => {
+  BANNERS[params.get("b") || "friends"]();
+  setTimeout(() => (window.bannerReady = true), 300);
+});
+</script>
+</body>
+</html>

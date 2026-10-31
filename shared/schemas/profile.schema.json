@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ShadowClient Profile",
+  "type": "object",
+  "required": ["id", "name", "minecraftVersion", "memoryMb", "jvmArgs", "createdAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 48 },
+    "minecraftVersion": { "type": "string", "pattern": "^1\\.21(\\.\\d+)?$" },
+    "fabricLoaderVersion": { "type": ["string", "null"] },
+    "memoryMb": { "type": "integer", "minimum": 1024, "maximum": 65536 },
+    "jvmArgs": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "lastPlayed": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

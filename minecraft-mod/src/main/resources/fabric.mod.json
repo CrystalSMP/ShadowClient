@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "shadowclient",
+  "version": "${version}",
+  "name": "ShadowClient",
+  "description": "Client-side menu and HUD modules for ShadowClient. Visual only – no server-side changes.",
+  "authors": ["Maxushky"],
+  "contact": { "sources": "https://github.com/CrystalSMP/ShadowClient" },
+  "license": "MIT",
+  "icon": "assets/shadowclient/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.shadowclient.ShadowClient"]
+  },
+  "mixins": ["shadowclient.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

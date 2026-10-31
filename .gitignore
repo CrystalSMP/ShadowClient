@@ -1,0 +1,10 @@
+node_modules/
+dist/
+launcher/src-tauri/target/
+launcher/src-tauri/gen/
+minecraft-mod/build/
+minecraft-mod/.gradle/
+*.log
+launcher/src-tauri/resources/mods/
+shadowclient-updater.key
+*.key

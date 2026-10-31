@@ -1,0 +1,31 @@
+{
+  "bundle": {
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "ShadowClient",
+    "shortDescription": "ShadowClient – Minecraft Launcher",
+    "longDescription": "Launcher für Minecraft Java mit der ShadowClient-Mod, Freunden, Cosmetics und Modrinth-Inhalten.",
+    "copyright": "© ShadowClient",
+    "resources": {
+      "resources/mods/shadowclient.jar": "mods/shadowclient.jar"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "German",
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "installer/header.bmp",
+        "sidebarImage": "installer/sidebar.bmp",
+        "startMenuFolder": "ShadowClient",
+        "compression": "lzma"
+      }
+    },
+    "licenseFile": "installer/license.txt",
+    "createUpdaterArtifacts": true
+  }
+}

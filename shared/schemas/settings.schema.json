@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ShadowClient Launcher Settings",
+  "type": "object",
+  "required": ["schemaVersion", "theme", "accentColor", "defaultMemoryMb", "closeOnLaunch"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "theme": { "enum": ["dark", "light"] },
+    "accentColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "javaPath": { "type": ["string", "null"] },
+    "defaultMemoryMb": { "type": "integer", "minimum": 1024, "maximum": 65536 },
+    "closeOnLaunch": { "type": "boolean" }
+  }
+}

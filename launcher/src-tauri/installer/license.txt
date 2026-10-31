@@ -1,0 +1,22 @@
+ShadowClient – Nutzungsbedingungen
+
+1. ShadowClient ist ein kostenloser Launcher für Minecraft: Java Edition mit der
+   ShadowClient-Mod. Du brauchst ein eigenes, gekauftes Minecraft-Konto.
+
+2. ShadowClient ist kein offizielles Minecraft-Produkt und steht in keiner
+   Verbindung zu Mojang Studios oder Microsoft. „Minecraft“ ist eine Marke von
+   Mojang Studios.
+
+3. Die Anmeldung läuft ausschließlich über den offiziellen Microsoft-Login.
+   ShadowClient sieht und speichert dein Passwort nie. Das Anmelde-Token wird
+   sicher in der Windows-Anmeldeinformationsverwaltung abgelegt.
+
+4. Online-Funktionen (Abzeichen, Freunde, Nachrichten, Party, Capes) sind
+   freiwillig und lassen sich ingame einzeln abschalten. Dabei werden deine
+   Minecraft-UUID, dein Name und – wenn du es erlaubst – dein aktueller Server
+   an den ShadowClient-Server übertragen.
+
+5. ShadowClient enthält keine Cheats und verschafft keinen unfairen Vorteil.
+   Halte dich an die Regeln der Server, auf denen du spielst.
+
+6. Die Software wird ohne Gewähr bereitgestellt. Nutzung auf eigene Verantwortung.
